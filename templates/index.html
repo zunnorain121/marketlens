@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MarketLens Redirect</title>
+  <meta http-equiv="refresh" content="0; url=/dashboard" />
+</head>
+<body>
+  <p>Redirecting to <a href="/dashboard">Dashboard</a>...</p>
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MarketLens — Stock Analysis Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+  --bg:        #090d13;
+  --surface:   #0f1520;
+  --card:      #131c2b;
+  --border:    #1e2d42;
+
+  --accent:    #00C896;
+  --accent-glow: #5CFFB0;
+
+  --green:     #00C896;
+  --red:       #ff1744;
+  --yellow:    #ffd600;
+
+  --muted:     #4a6080;
+  --text:      #c8d8e8;
+  --white:     #eaf4ff;
+
+  --font-mono: 'Space Mono', monospace;
+  --font-sans: 'Syne', sans-serif;
+}
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(24,200,255,.028) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(24,200,255,.028) 1px, transparent 1px);
+      background-size: 44px 44px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      width: min(100% - 2.5rem, 1180px);
+      margin: 0 auto;
+      position: relative;
+      z-index: 3;
+    }
+
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: rgba(10, 15, 24, 0.9);
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(10px);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 72px;
+      gap: 1rem;
+    }
+    .logo, .logo:visited {
+      font-family: var(--font-sans);
+      font-weight: 800;
+      font-size: 1.2rem;
+      color: var(--white);
+      letter-spacing: -0.02em;
+      text-decoration: none;
+    }
+    .logo span { color: var(--accent); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.1rem;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      text-decoration: none;
+      font-family: var(--font-mono);
+      font-size: .72rem;
+      color: var(--muted);
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      transition: color .2s;
+    }
+    .nav-link:hover { color: var(--white); }
+    .nav-cta {
+      text-decoration: none;
+      border-radius: 9px;
+      padding: .62rem 1rem;
+      background: var(--accent);
+      color: #062231;
+      border: 1px solid transparent;
+      font-size: .74rem;
+      font-weight: 700;
+      letter-spacing: .05em;
+      text-transform: uppercase;
+      transition: transform .2s, opacity .2s;
+    }
+    .nav-cta:hover { transform: translateY(-1px); opacity: .9; }
+
+    .dashboard-shell {
+      position: relative;
+      z-index: 3;
+      padding: 1.5rem 0 3rem;
+    }
+
+    .headline {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+    .headline h1 {
+      color: var(--white);
+      font-size: clamp(1.4rem, 2.5vw, 2rem);
+      line-height: 1.2;
+    }
+    .headline p {
+      color: var(--muted);
+      max-width: 580px;
+      font-size: .93rem;
+    }
+
+    .search-section {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      background: rgba(19, 31, 49, 0.82);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: var(--font-mono);
+      font-size: .9rem;
+      padding: 12px 16px 12px 44px;
+      border-radius: 8px;
+      outline: none;
+      transition: border-color .2s;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-wrap .icon {
+      position: absolute;
+      left: 14px; top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    select.period-select {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      padding: 12px 14px;
+      border-radius: 8px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    button.btn-primary {
+      background: var(--accent);
+      color: #062231;
+      font-family: var(--font-sans);
+      font-weight: 700;
+      font-size: .85rem;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      letter-spacing: .5px;
+    }
+    button.btn-primary:hover { opacity: .85; transform: translateY(-1px); }
+    button.btn-primary:active { transform: translateY(0); }
+
+    .quick-tickers {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 14px 2px 0;
+    }
+    .quick-btn {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      background: transparent;
+      padding: 5px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .quick-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+    main {
+      display: grid;
+      gap: 14px;
+      margin-top: 1rem;
+    }
+
+    #status-msg {
+      display: none;
+      padding: 16px 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      color: var(--muted);
+      text-align: center;
+    }
+    #status-msg.visible { display: block; }
+    #status-msg.error { color: var(--red); border-color: var(--red); }
+
+    #stock-header {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 20px 22px;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    #stock-header.visible { display: flex; }
+
+    .stock-name h2 {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: var(--white);
+    }
+    .stock-name p {
+      font-family: var(--font-mono);
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .price-block { text-align: right; }
+    .price-block .price {
+      font-family: var(--font-mono);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .signal-badge {
+      font-family: var(--font-mono);
+      font-size: .85rem;
+      font-weight: 700;
+      padding: 8px 20px;
+      border-radius: 6px;
+      letter-spacing: 2px;
+    }
+    .signal-badge.BUY  { background: rgba(0,230,118,.12); color: var(--green); border: 1px solid var(--green); }
+    .signal-badge.SELL { background: rgba(255,23,68,.12);  color: var(--red);   border: 1px solid var(--red); }
+    .signal-badge.HOLD { background: rgba(255,214,0,.1);   color: var(--yellow);border: 1px solid var(--yellow);}
+
+    #stats-row {
+      display: none;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+    }
+    #stats-row.visible { display: grid; }
+
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      transition: border-color .2s;
+    }
+    .stat-card:hover { border-color: var(--accent); }
+    .stat-card .label {
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    .stat-card .value {
+      font-family: var(--font-mono);
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .stat-card .sub {
+      font-size: .7rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+
+    #charts-section {
+      display: none;
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    #charts-section.visible { display: grid; }
+
+    .chart-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+    }
+    .chart-card h3 {
+      font-size: .8rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 20px;
+    }
+    .chart-wrap { position: relative; }
+
+    #signal-detail {
+      display: none;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    #signal-detail.visible { display: block; }
+    #signal-detail h3 {
+      font-size: .75rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 14px;
+    }
+    .signal-row {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      align-items: flex-start;
+    }
+    .signal-metric {
+      flex: 1;
+      min-width: 110px;
+      background: #0f1727;
+      border-radius: 10px;
+      padding: 14px 16px;
+    }
+    .signal-metric .sm-label {
+      font-family: var(--font-mono);
+      font-size: .6rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .signal-metric .sm-val {
+      font-family: var(--font-mono);
+      font-size: 1rem;
+      color: var(--white);
+      margin-top: 4px;
+    }
+    .signal-reason {
+      flex: 2;
+      min-width: 200px;
+      font-size: .9rem;
+      color: var(--text);
+      line-height: 1.6;
+      padding: 14px 16px;
+      background: #0f1727;
+      border-radius: 10px;
+      border-left: 3px solid var(--accent);
+    }
+
+    #compare-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px 20px;
+    }
+    #compare-section h3 {
+      font-size: .75rem;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      margin-bottom: 16px;
+    }
+    .compare-input-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .compare-input-row input {
+      flex: 1;
+      min-width: 180px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: var(--font-mono);
+      font-size: .8rem;
+      padding: 10px 14px;
+      border-radius: 8px;
+      outline: none;
+      text-transform: uppercase;
+    }
+    .compare-input-row input:focus { border-color: var(--accent); }
+
+    table.compare-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: .8rem;
+    }
+    .compare-table th {
+      color: var(--muted);
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 8px 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .compare-table td {
+      padding: 12px 12px;
+      border-bottom: 1px solid rgba(30,45,66,.5);
+      color: var(--text);
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:hover td { background: rgba(0,229,255,.03); }
+
+    .pos { color: var(--green); }
+    .neg { color: var(--red); }
+
+    /* Risk pill */
+    .risk-pill {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: .65rem;
+      font-weight: 700;
+    }
+    .risk-pill.Low    { background: rgba(0,230,118,.1);  color: var(--green); }
+    .risk-pill.Medium { background: rgba(255,214,0,.1);  color: var(--yellow); }
+    .risk-pill.High   { background: rgba(255,23,68,.1);  color: var(--red); }
+
+    footer {
+      margin-top: 2rem;
+      border-top: 1px solid var(--border);
+      padding: 1.6rem 0 2rem;
+      color: var(--muted);
+    }
+    .foot-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: .8rem;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: .68rem;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px; height: 18px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .fade-in { animation: fadeIn .4s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+    @media (max-width: 860px) {
+      .nav-links { gap: .7rem; }
+      .nav-link { font-size: .66rem; }
+      .headline { margin-bottom: .85rem; }
+    }
+
+    @media (max-width: 700px) {
+      .container { width: min(100% - 1.35rem, 1180px); }
+      .nav-inner { min-height: 64px; }
+      .nav-links {
+        width: 100%;
+        justify-content: center;
+        border-top: 1px solid var(--border);
+        padding: .65rem 0 .3rem;
+      }
+      .search-section {
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .foot-inner { justify-content: center; text-align: center; }
+    }
+
+    /* ── Floating Chatbot ── */
+    .chatbot-fab {
+      position: fixed;
+      right: 22px;
+      bottom: 22px;
+      width: 58px;
+      height: 58px;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #062231;
+      font-size: 24px;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(0, 200, 150, 0.35);
+      z-index: 1200;
+      transition: transform .2s, opacity .2s;
+    }
+    .chatbot-fab:hover { transform: translateY(-2px); opacity: .92; }
+
+    .chatbot-panel {
+      position: fixed;
+      right: 22px;
+      bottom: 90px;
+      width: min(360px, calc(100vw - 24px));
+      height: 470px;
+      display: none;
+      flex-direction: column;
+      background: #0d1522;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+      z-index: 1200;
+      box-shadow: 0 20px 36px rgba(0, 0, 0, 0.45);
+    }
+    .chatbot-panel.open { display: flex; }
+    .chatbot-head {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #101d2e;
+    }
+    .chatbot-head strong { font-size: .9rem; color: var(--white); }
+    .chatbot-head small { color: var(--muted); display: block; font-size: .68rem; }
+    .chatbot-close {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 7px;
+      font-size: .75rem;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+    .chatbot-messages {
+      flex: 1;
+      padding: 12px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      background: #0b1220;
+    }
+    .chat-msg {
+      max-width: 88%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: .82rem;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: rgba(0, 200, 150, 0.2);
+      border: 1px solid rgba(0, 200, 150, 0.42);
+      color: #d8fff2;
+    }
+    .chat-msg.bot {
+      align-self: flex-start;
+      background: #121f31;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+    .chatbot-input-row {
+      border-top: 1px solid var(--border);
+      padding: 10px;
+      display: flex;
+      gap: 8px;
+      background: #0f1a2a;
+    }
+    .chatbot-input-row input {
+      flex: 1;
+      background: #0b1220;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 9px 10px;
+      font-size: .82rem;
+      outline: none;
+    }
+    .chatbot-input-row input:focus { border-color: var(--accent); }
+    .chatbot-send {
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #062231;
+      font-weight: 700;
+      padding: 0 12px;
+      cursor: pointer;
+      font-size: .78rem;
+    }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a class="logo" href="/home">Market<span>Lens</span></a>
+    <div class="nav-links">
+      <a class="nav-link" href="/home#home">Home</a>
+      <a class="nav-link" href="/home#insights">Insights</a>
+      <a class="nav-link" href="/home#market-data">Market Data</a>
+      <a class="nav-link" href="/home#psx">PSX</a>
+      <a class="nav-cta" href="/">Dashboard</a>
+    </div>
+  </div>
+ </nav>
+
+<div class="dashboard-shell">
+  <div class="container">
+    <div class="headline">
+      <div>
+        <h1>Live Market Dashboard</h1>
+        <p>Analyze stocks with EDA metrics, moving averages, RSI, and explainable BUY / SELL / HOLD signals.</p>
+      </div>
+    </div>
+
+    <div class="search-section">
+      <div class="search-wrap">
+        <span class="icon">⌕</span>
+        <input type="text" id="ticker-input" placeholder="Enter ticker e.g. AAPL" value="AAPL"/>
+      </div>
+      <select class="period-select" id="period-select">
+        <option value="1mo">1 Month</option>
+        <option value="3mo">3 Months</option>
+        <option value="6mo" selected>6 Months</option>
+        <option value="1y">1 Year</option>
+        <option value="2y">2 Years</option>
+      </select>
+      <button class="btn-primary" onclick="loadStock()">Analyze</button>
+    </div>
+
+    <div class="quick-tickers">
+      <span style="font-family:var(--font-mono);font-size:.65rem;color:var(--muted);margin-right:4px;">Quick:</span>
+      <button class="quick-btn" onclick="quickLoad('AAPL')">AAPL</button>
+      <button class="quick-btn" onclick="quickLoad('MSFT')">MSFT</button>
+      <button class="quick-btn" onclick="quickLoad('GOOGL')">GOOGL</button>
+      <button class="quick-btn" onclick="quickLoad('TSLA')">TSLA</button>
+      <button class="quick-btn" onclick="quickLoad('AMZN')">AMZN</button>
+      <button class="quick-btn" onclick="quickLoad('NVDA')">NVDA</button>
+      <button class="quick-btn" onclick="quickLoad('META')">META</button>
+    </div>
+
+    <main>
+  <!-- Status -->
+  <div id="status-msg"></div>
+
+  <!-- Stock Header -->
+  <div id="stock-header">
+    <div class="stock-name">
+      <h2 id="sh-name">—</h2>
+      <p id="sh-ticker">—</p>
+    </div>
+    <div id="sh-signal" class="signal-badge HOLD">HOLD</div>
+    <div class="price-block">
+      <div class="price" id="sh-price">—</div>
+      <div style="font-family:var(--font-mono);font-size:.7rem;color:var(--muted);margin-top:2px;">Latest Close</div>
+    </div>
+  </div>
+
+  <!-- Stats Row -->
+  <div id="stats-row">
+    <div class="stat-card"><div class="label">Mean Price</div><div class="value" id="s-mean">—</div></div>
+    <div class="stat-card"><div class="label">Std Dev</div><div class="value" id="s-std">—</div></div>
+    <div class="stat-card"><div class="label">52w High</div><div class="value" id="s-max">—</div></div>
+    <div class="stat-card"><div class="label">52w Low</div><div class="value" id="s-min">—</div></div>
+    <div class="stat-card"><div class="label">Avg Daily Return</div><div class="value" id="s-ret">—</div><div class="sub">%</div></div>
+    <div class="stat-card"><div class="label">Volatility</div><div class="value" id="s-vol">—</div><div class="sub">% daily</div></div>
+    <div class="stat-card"><div class="label">Risk Level</div><div class="value" id="s-risk">—</div></div>
+  </div>
+
+  <!-- Charts -->
+  <div id="charts-section">
+    <div class="chart-card">
+      <h3>Price + Moving Averages</h3>
+      <div class="chart-wrap"><canvas id="priceChart" height="100"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>RSI — Relative Strength Index</h3>
+      <div class="chart-wrap"><canvas id="rsiChart" height="60"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Trading Volume</h3>
+      <div class="chart-wrap"><canvas id="volChart" height="60"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Signal Detail -->
+  <div id="signal-detail">
+    <h3>Decision Signal Breakdown</h3>
+    <div class="signal-row">
+      <div class="signal-metric">
+        <div class="sm-label">MA 20</div>
+        <div class="sm-val" id="sig-ma20">—</div>
+      </div>
+      <div class="signal-metric">
+        <div class="sm-label">MA 50</div>
+        <div class="sm-val" id="sig-ma50">—</div>
+      </div>
+      <div class="signal-metric">
+        <div class="sm-label">RSI (14)</div>
+        <div class="sm-val" id="sig-rsi">—</div>
+      </div>
+      <div class="signal-reason" id="sig-reason">—</div>
+    </div>
+  </div>
+
+  <!-- Compare -->
+  <div id="compare-section">
+    <h3>Multi-Stock Comparison</h3>
+    <div class="compare-input-row">
+      <input type="text" id="compare-input" placeholder="AAPL, MSFT, GOOGL, TSLA" value="AAPL, MSFT, GOOGL, TSLA"/>
+      <button class="btn-primary" onclick="loadCompare()">Compare</button>
+    </div>
+    <div id="compare-table-wrap">
+      <p style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted);">Enter tickers above and click Compare.</p>
+    </div>
+  </div>
+</main>
+  </div>
+</div>
+
+<footer>
+  <div class="container foot-inner">
+    <span>MarketLens — Smart Stock Intelligence</span>
+    <span>Data via Yahoo Finance · For educational purposes only · Not financial advice</span>
+  </div>
+</footer>
+
+<button class="chatbot-fab" id="chatbotFab" aria-label="Open chatbot">💬</button>
+<div class="chatbot-panel" id="chatbotPanel">
+  <div class="chatbot-head">
+    <div>
+      <strong>MarketLens Assistant</strong>
+      <small>Charts, indicators, and signals help</small>
+    </div>
+    <button class="chatbot-close" id="chatbotClose">Close</button>
+  </div>
+  <div class="chatbot-messages" id="chatbotMessages"></div>
+  <div class="chatbot-input-row">
+    <input id="chatbotInput" type="text" placeholder="Ask about RSI, signals, chart trend..." />
+    <button class="chatbot-send" id="chatbotSend">Send</button>
+  </div>
+</div>
+
+<script>
+  let priceChart = null, rsiChart = null, volChart = null;
+
+  const CHART_DEFAULTS = {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: { color: '#4a6080', font: { family: 'Space Mono', size: 10 } } } },
+    scales: {
+      x: { ticks: { color: '#4a6080', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 }, grid: { color: 'rgba(30,45,66,.5)' } },
+      y: { ticks: { color: '#4a6080', font: { family: 'Space Mono', size: 9 } }, grid: { color: 'rgba(30,45,66,.5)' } }
+    }
+  };
+
+  function showStatus(msg, isError=false) {
+    const el = document.getElementById('status-msg');
+    el.innerHTML = isError ? msg : `<span class="spinner"></span>${msg}`;
+    el.className = 'visible' + (isError ? ' error' : '');
+  }
+  function hideStatus() { document.getElementById('status-msg').className = ''; }
+
+  function show(id) { document.getElementById(id).classList.add('visible','fade-in'); }
+  function hide(id) { document.getElementById(id).classList.remove('visible'); }
+
+  function quickLoad(ticker) {
+    document.getElementById('ticker-input').value = ticker;
+    loadStock();
+  }
+
+  async function loadStock() {
+    const ticker = document.getElementById('ticker-input').value.trim().toUpperCase();
+    const period = document.getElementById('period-select').value;
+    if (!ticker) return;
+
+    showStatus(`Fetching data for ${ticker}...`);
+    hide('stock-header'); hide('stats-row'); hide('charts-section'); hide('signal-detail');
+
+    try {
+      const res  = await fetch(`/api/stock?ticker=${ticker}&period=${period}`);
+      const data = await res.json();
+
+      if (!data.success) { showStatus('⚠ ' + data.error, true); return; }
+      hideStatus();
+
+      // Header
+      document.getElementById('sh-name').textContent   = data.name;
+      document.getElementById('sh-ticker').textContent = data.ticker;
+      document.getElementById('sh-price').textContent  = '$' + data.signal.close.toLocaleString();
+      const badge = document.getElementById('sh-signal');
+      badge.textContent = data.signal.signal;
+      badge.className = 'signal-badge ' + data.signal.signal;
+      show('stock-header');
+
+      // Stats
+      const s = data.stats;
+      document.getElementById('s-mean').textContent = '$' + s.mean;
+      document.getElementById('s-std').textContent  = '$' + s.std;
+      document.getElementById('s-max').textContent  = '$' + s.max;
+      document.getElementById('s-min').textContent  = '$' + s.min;
+      document.getElementById('s-ret').textContent  = s.avg_return + '%';
+      document.getElementById('s-vol').textContent  = s.volatility + '%';
+      const riskEl = document.getElementById('s-risk');
+      riskEl.textContent = s.risk;
+      riskEl.className = 'value';
+      const riskColor = { Low: '#00e676', Medium: '#ffd600', High: '#ff1744' };
+      riskEl.style.color = riskColor[s.risk];
+      show('stats-row');
+
+      // Charts
+      buildCharts(data.chart);
+      show('charts-section');
+
+      // Signal detail
+      const sig = data.signal;
+      document.getElementById('sig-ma20').textContent   = '$' + sig.ma20;
+      document.getElementById('sig-ma50').textContent   = '$' + sig.ma50;
+      document.getElementById('sig-rsi').textContent    = sig.rsi;
+      document.getElementById('sig-reason').textContent = sig.reason;
+      show('signal-detail');
+
+    } catch(e) {
+      showStatus('⚠ Network error: ' + e.message, true);
+    }
+  }
+
+  function buildCharts(c) {
+    if (priceChart) priceChart.destroy();
+    if (rsiChart)   rsiChart.destroy();
+    if (volChart)   volChart.destroy();
+
+    // Price chart
+    priceChart = new Chart(document.getElementById('priceChart'), {
+      type: 'line',
+      data: {
+        labels: c.dates,
+        datasets: [
+          { label: 'Close', data: c.close, borderColor: '#00e5ff', borderWidth: 2, pointRadius: 0, tension: .3, fill: false },
+          { label: 'MA20',  data: c.ma20,  borderColor: '#ffd600', borderWidth: 1.5, pointRadius: 0, tension: .3, fill: false, borderDash: [4,3] },
+          { label: 'MA50',  data: c.ma50,  borderColor: '#ff6d00', borderWidth: 1.5, pointRadius: 0, tension: .3, fill: false, borderDash: [4,3] },
+        ]
+      },
+      options: { ...CHART_DEFAULTS }
+    });
+
+    // RSI chart
+    rsiChart = new Chart(document.getElementById('rsiChart'), {
+      type: 'line',
+      data: {
+        labels: c.dates,
+        datasets: [
+          { label: 'RSI', data: c.rsi, borderColor: '#e040fb', borderWidth: 1.5, pointRadius: 0, tension: .3, fill: false },
+        ]
+      },
+      options: {
+        ...CHART_DEFAULTS,
+        plugins: {
+          ...CHART_DEFAULTS.plugins,
+          annotation: {}
+        },
+        scales: {
+          ...CHART_DEFAULTS.scales,
+          y: { ...CHART_DEFAULTS.scales.y, min: 0, max: 100,
+               ticks: { ...CHART_DEFAULTS.scales.y.ticks, callback: v => v } }
+        }
+      }
+    });
+
+    // Volume chart
+    volChart = new Chart(document.getElementById('volChart'), {
+      type: 'bar',
+      data: {
+        labels: c.dates,
+        datasets: [
+          { label: 'Volume', data: c.volume, backgroundColor: 'rgba(0,229,255,.18)', borderColor: 'rgba(0,229,255,.4)', borderWidth: 1 }
+        ]
+      },
+      options: { ...CHART_DEFAULTS }
+    });
+  }
+
+  async function loadCompare() {
+    const raw    = document.getElementById('compare-input').value;
+    const period = document.getElementById('period-select').value;
+    const wrap   = document.getElementById('compare-table-wrap');
+    wrap.innerHTML = '<span class="spinner"></span> Loading...';
+
+    try {
+      const res  = await fetch(`/api/compare?tickers=${encodeURIComponent(raw)}&period=${period}`);
+      const data = await res.json();
+      if (!data.success || !data.comparison.length) {
+        wrap.innerHTML = '<p style="color:var(--red);font-family:var(--font-mono);font-size:.8rem;">No data returned.</p>';
+        return;
+      }
+
+      let rows = data.comparison.map(d => {
+        const pct   = d.pct_change;
+        const pSign = pct >= 0 ? '+' : '';
+        const pCls  = pct >= 0 ? 'pos' : 'neg';
+        const sBadge = `<span class="signal-badge ${d.signal}" style="font-size:.65rem;padding:3px 10px;">${d.signal}</span>`;
+        return `<tr>
+          <td style="color:var(--white);font-weight:700">${d.ticker}</td>
+          <td>$${d.close.toLocaleString()}</td>
+          <td class="${pCls}">${pSign}${pct}%</td>
+          <td>${d.volatility}%</td>
+          <td><span class="risk-pill ${d.risk}">${d.risk}</span></td>
+          <td>${sBadge}</td>
+        </tr>`;
+      }).join('');
+
+      wrap.innerHTML = `
+        <table class="compare-table">
+          <thead><tr>
+            <th>Ticker</th><th>Price</th><th>Period Return</th>
+            <th>Volatility</th><th>Risk</th><th>Signal</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    } catch(e) {
+      wrap.innerHTML = `<p style="color:var(--red);font-family:var(--font-mono);font-size:.8rem;">Error: ${e.message}</p>`;
+    }
+  }
+
+  // Load AAPL on page load
+  window.addEventListener('DOMContentLoaded', () => loadStock());
+
+  // ── Floating Chatbot Logic (frontend-only, rule-based) ──
+  const chatbotFab = document.getElementById('chatbotFab');
+  const chatbotPanel = document.getElementById('chatbotPanel');
+  const chatbotClose = document.getElementById('chatbotClose');
+  const chatbotMessages = document.getElementById('chatbotMessages');
+  const chatbotInput = document.getElementById('chatbotInput');
+  const chatbotSend = document.getElementById('chatbotSend');
+
+  function addChatMessage(text, role) {
+    const el = document.createElement('div');
+    el.className = `chat-msg ${role}`;
+    el.textContent = text;
+    chatbotMessages.appendChild(el);
+    chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    return el;
+  }
+
+  function getBotReply(message) {
+    const msg = message.toLowerCase();
+
+    // Stock/chart analysis
+    if (msg.includes('chart') || msg.includes('trend analysis') || msg.includes('trend') || msg.includes('price movement') || msg.includes('going up') || msg.includes('going down') || msg.includes('bullish') || msg.includes('bearish')) {
+      return 'This chart shows price movement over time. If recent highs and lows are rising, the trend is bullish (uptrend). If highs and lows are falling, it is bearish (downtrend). Compare price direction with MA20/MA50 and RSI for stronger confirmation.';
+    }
+
+    // Indicators
+    if (msg.includes('rsi')) {
+      return 'RSI (Relative Strength Index) measures momentum from 0 to 100. Above 70 suggests overbought conditions, below 30 suggests oversold conditions. RSI helps judge whether price may be stretched.';
+    }
+    if (msg.includes('ma20') || msg.includes('ma 20') || msg.includes('ma50') || msg.includes('ma 50') || msg.includes('moving average')) {
+      return 'MA20 tracks short-term trend and MA50 tracks longer-term trend. If MA20 is above MA50, momentum is generally stronger. If MA20 is below MA50, momentum is weaker or bearish.';
+    }
+    if (msg.includes('volatility')) {
+      return 'Volatility shows how much returns fluctuate day-to-day. Higher volatility means bigger swings and higher uncertainty; lower volatility means steadier movement.';
+    }
+    if (msg.includes('risk')) {
+      return 'Risk level is tied to volatility in this dashboard: low risk means more stable returns, medium risk means moderate fluctuations, and high risk means larger price swings.';
+    }
+
+    // Signal system
+    if (msg.includes('buy signal') || msg === 'buy' || msg.includes('why buy')) {
+      return 'BUY appears when MA20 > MA50 and RSI < 70. In simple words: short-term trend is stronger than long-term trend, and momentum is positive without being too overheated.';
+    }
+    if (msg.includes('sell signal') || msg === 'sell' || msg.includes('why sell')) {
+      return 'SELL appears when MA20 < MA50 and RSI > 30. In simple words: short-term trend has weakened versus long-term trend, signaling bearish pressure.';
+    }
+    if (msg.includes('hold') || msg.includes('why hold')) {
+      return 'HOLD appears when there is no strong directional setup. The indicators do not confirm a clear bullish or bearish edge yet.';
+    }
+    if (msg.includes('signal')) {
+      return 'Signal logic in this app: BUY = MA20 > MA50 + RSI < 70, SELL = MA20 < MA50 + RSI > 30, HOLD = no strong confirmed trend.';
+    }
+
+    // Company info
+    if (msg.includes('aapl') || msg.includes('apple')) {
+      return 'AAPL is Apple Inc., a large US technology company known for iPhone, Mac, and services. It is commonly used as a benchmark growth/tech stock.';
+    }
+    if (msg.includes('hbl')) {
+      return 'HBL (HBL.KA) is Habib Bank Limited, a major Pakistani banking stock. It is typically analyzed in the financial/banking sector context.';
+    }
+    if (msg.includes('ogdc')) {
+      return 'OGDC (OGDC.KA) is Oil & Gas Development Company, a major Pakistan energy stock. Its performance is often linked with energy prices and sector sentiment.';
+    }
+    if (msg.includes('pso')) {
+      return 'PSO (PSO.KA) is Pakistan State Oil, an energy-sector company in Pakistan. Analysts usually track fuel demand, margins, and policy context.';
+    }
+    if (msg.includes('msft') || msg.includes('microsoft')) {
+      return 'MSFT is Microsoft Corporation, a large-cap technology stock with exposure to cloud, software, and AI businesses.';
+    }
+    if (msg.includes('nvda') || msg.includes('nvidia')) {
+      return 'NVDA is NVIDIA Corporation, a semiconductor and AI infrastructure leader often associated with high-growth tech momentum.';
+    }
+    if (msg.includes('amzn') || msg.includes('amazon')) {
+      return 'AMZN is Amazon.com, a major e-commerce and cloud computing company (AWS), often analyzed as a growth and platform stock.';
+    }
+    if (msg.includes('meta') || msg.includes('facebook')) {
+      return 'META is Meta Platforms, focused on social media and digital advertising with growing investments in AI and immersive technologies.';
+    }
+    if (msg.includes('tsla') || msg.includes('tesla')) {
+      return 'TSLA is Tesla, an EV and clean-energy company. It is often a high-volatility stock with trend-driven momentum moves.';
+    }
+
+    // Beginner finance questions
+    if (msg.includes('what is stock') || msg === 'stock') {
+      return 'A stock represents ownership in a company. If the company grows and earns more, stock value may rise; if performance weakens, it may fall.';
+    }
+    if (msg.includes('what is trading') || msg === 'trading') {
+      return 'Trading means buying and selling financial assets (like stocks) to benefit from price changes over time.';
+    }
+    if (msg.includes('what is market trend') || msg.includes('market trend')) {
+      return 'Market trend is the overall direction of price movement over time. Uptrend = rising structure, downtrend = falling structure, sideways = no clear direction.';
+    }
+
+    return 'I can help you understand stock charts, indicators (RSI, MA20, MA50), signals (BUY/SELL/HOLD), and basic company info.';
+  }
+
+  function sendChat() {
+    const text = chatbotInput.value.trim();
+    if (!text) return;
+    addChatMessage(text, 'user');
+    chatbotInput.value = '';
+
+    const typingEl = addChatMessage('typing...', 'bot');
+    setTimeout(() => {
+      typingEl.textContent = getBotReply(text);
+      chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }, 450);
+  }
+
+  chatbotFab.addEventListener('click', () => {
+    chatbotPanel.classList.toggle('open');
+    if (chatbotPanel.classList.contains('open') && !chatbotMessages.children.length) {
+      addChatMessage('Hi! Ask me about chart trends, RSI, MA20/MA50, volatility, risk, and BUY/SELL/HOLD signals.', 'bot');
+    }
+  });
+  chatbotClose.addEventListener('click', () => chatbotPanel.classList.remove('open'));
+  chatbotSend.addEventListener('click', sendChat);
+  chatbotInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      sendChat();
+    }
+  });
+</script>
+</body>
+</html>

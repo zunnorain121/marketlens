@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Market Data - MarketLens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    :root { --bg:#0a0f18; --card:#131f31; --surface:#101826; --border:#22344e; --accent:#18c8ff; --text:#dce8f5; --muted:#8da3bb; --green:#20d98b; --red:#ff5d73; --yellow:#ffcc4d; }
+    * { box-sizing:border-box; margin:0; padding:0; } body { font-family:Inter,sans-serif; background:var(--bg); color:var(--text); }
+    .container { width:min(100% - 2.5rem,1180px); margin:0 auto; }
+    .navbar { position:sticky; top:0; z-index:20; background:rgba(10,15,24,.9); border-bottom:1px solid var(--border); backdrop-filter:blur(10px); }
+    .nav { min-height:72px; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .logo { color:#f4f8fc; text-decoration:none; font-weight:800; font-size:1.2rem; } .logo span{color:var(--accent);}
+    .links { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+    .links a { text-decoration:none; color:var(--muted); font-family:"Space Mono",monospace; text-transform:uppercase; font-size:.72rem; }
+    .links a:hover { color:#f4f8fc; }
+    .links .cta { background:var(--accent); color:#062231; padding:.6rem .95rem; border-radius:9px; font-weight:700; font-family:Inter,sans-serif; font-size:.75rem; }
+    .top { padding:1.4rem 0; display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; }
+    h1 { font-size:1.7rem; } .top p { color:var(--muted); margin-top:.35rem; }
+    .search-wrap { max-width:320px; width:100%; }
+    input { width:100%; background:var(--surface); border:1px solid var(--border); color:var(--text); border-radius:9px; padding:.75rem .82rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:.9rem; padding-bottom:1.5rem; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem; }
+    .card h3 { font-size:1rem; margin-bottom:.25rem; } .ticker { color:var(--muted); font-family:"Space Mono",monospace; font-size:.74rem; }
+    .price { margin-top:.7rem; font-size:1.5rem; font-weight:800; }
+    .signal { margin-top:.55rem; font-family:"Space Mono",monospace; font-size:.72rem; display:inline-block; padding:.2rem .55rem; border-radius:999px; }
+    .BUY { color:var(--green); background:rgba(32,217,139,.12); border:1px solid rgba(32,217,139,.48); }
+    .SELL { color:var(--red); background:rgba(255,93,115,.12); border:1px solid rgba(255,93,115,.48); }
+    .HOLD { color:var(--yellow); background:rgba(255,204,77,.12); border:1px solid rgba(255,204,77,.48); }
+    .NA { color:var(--muted); background:#0f1727; border:1px solid var(--border); }
+    .actions { display:flex; gap:.5rem; margin-top:.8rem; }
+    button { border:none; border-radius:8px; padding:.58rem .62rem; cursor:pointer; font-size:.75rem; font-weight:700; }
+    .view { background:var(--accent); color:#062231; flex:1; } .watch { background:#0f1727; color:var(--text); border:1px solid var(--border); flex:1; }
+    .msg { color:var(--muted); font-size:.9rem; margin-bottom:1rem; }
+    .modal { position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.6); padding:1rem; z-index:50; }
+    .modal.open { display:flex; }
+    .modal-card { width:min(100%,640px); background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1rem; }
+    .modal-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:.7rem; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:.6rem; margin-top:.9rem; }
+    .stat { background:#0f1727; border:1px solid var(--border); border-radius:8px; padding:.6rem; }
+    .stat small { color:var(--muted); font-size:.66rem; font-family:"Space Mono",monospace; text-transform:uppercase; } .stat strong { display:block; margin-top:.22rem; font-size:.92rem; }
+    @media (max-width:700px){ .container{width:min(100% - 1.35rem,1180px);} }
+  </style>
+  <link rel="stylesheet" href="/static/css/chatbot.css" />
+</head>
+<body>
+  <nav class="navbar"><div class="container nav"><a class="logo" href="/home">Market<span>Lens</span></a><div class="links"><a href="/home">Home</a><a href="/market">Market Data</a><a href="/dashboard" class="cta">Dashboard</a><a href="/logout">Logout</a></div></div></nav>
+  <div class="container">
+    <div class="top"><div><h1>Stock Catalog</h1><p>Browse supported stocks, inspect analysis, and save to watchlist.</p></div><div class="search-wrap"><input id="searchInput" placeholder="Search ticker or company..." /></div></div>
+    <div class="msg" id="message">Loading market catalog...</div>
+    <div class="grid" id="stockGrid"></div>
+  </div>
+
+  <div class="modal" id="analysisModal">
+    <div class="modal-card">
+      <div class="modal-head"><h3 id="mTitle">Analysis</h3><button class="watch" onclick="closeModal()">Close</button></div>
+      <p id="mSignalText" class="msg"></p>
+      <div class="stats">
+        <div class="stat"><small>Latest Price</small><strong id="mPrice">-</strong></div>
+        <div class="stat"><small>MA20</small><strong id="mMa20">-</strong></div>
+        <div class="stat"><small>MA50</small><strong id="mMa50">-</strong></div>
+        <div class="stat"><small>RSI</small><strong id="mRsi">-</strong></div>
+        <div class="stat"><small>Volatility</small><strong id="mVol">-</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const message = document.getElementById("message");
+    const stockGrid = document.getElementById("stockGrid");
+    const searchInput = document.getElementById("searchInput");
+    let stocks = [];
+
+    function formatSignalClass(signal) {
+      if (signal === "BUY" || signal === "SELL" || signal === "HOLD") return signal;
+      return "NA";
+    }
+
+    function cardTemplate(stock) {
+      const priceText = stock.price === null ? "N/A" : "$" + stock.price.toLocaleString();
+      return `<div class="card">
+        <h3>${stock.name}</h3>
+        <div class="ticker">${stock.ticker}</div>
+        <div class="price">${priceText}</div>
+        <span class="signal ${formatSignalClass(stock.signal)}">${stock.signal}</span>
+        <div class="actions">
+          <button class="view" onclick="viewAnalysis('${stock.ticker}')">View Analysis</button>
+          <button class="watch" onclick="addToWatchlist('${stock.ticker}')">Add Watchlist</button>
+        </div>
+      </div>`;
+    }
+
+    function renderStocks() {
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = stocks.filter((s) => s.ticker.toLowerCase().includes(q) || s.name.toLowerCase().includes(q));
+      stockGrid.innerHTML = filtered.map(cardTemplate).join("");
+      message.textContent = filtered.length ? `Showing ${filtered.length} stocks.` : "No stocks matched your search.";
+    }
+
+    async function loadCatalog() {
+      message.textContent = "Loading market catalog...";
+      const res = await fetch("/api/catalog");
+      const data = await res.json();
+      if (!data.success) {
+        message.textContent = data.error || "Failed to load catalog.";
+        return;
+      }
+      stocks = data.stocks;
+      renderStocks();
+    }
+
+    async function addToWatchlist(ticker) {
+      const res = await fetch("/api/watchlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker }),
+      });
+      const data = await res.json();
+      message.textContent = data.success ? `${ticker} added to watchlist.` : (data.error || "Could not add ticker.");
+    }
+
+    async function viewAnalysis(ticker) {
+      const res = await fetch(`/api/stock?ticker=${encodeURIComponent(ticker)}&period=6mo`);
+      const data = await res.json();
+      if (!data.success) {
+        message.textContent = data.error || "Failed to load analysis.";
+        return;
+      }
+
+      document.getElementById("mTitle").textContent = `${data.name} (${data.ticker})`;
+      document.getElementById("mSignalText").textContent = `${data.signal.signal}: ${data.signal.reason}`;
+      document.getElementById("mPrice").textContent = "$" + data.signal.close;
+      document.getElementById("mMa20").textContent = "$" + data.signal.ma20;
+      document.getElementById("mMa50").textContent = "$" + data.signal.ma50;
+      document.getElementById("mRsi").textContent = data.signal.rsi;
+      document.getElementById("mVol").textContent = data.stats.volatility + "%";
+      document.getElementById("analysisModal").classList.add("open");
+    }
+
+    function closeModal() {
+      document.getElementById("analysisModal").classList.remove("open");
+    }
+
+    searchInput.addEventListener("input", renderStocks);
+    setInterval(loadCatalog, 60000);
+    loadCatalog();
+  </script>
+  <script src="/static/js/chatbot.js" data-page="market" data-enabled="true"></script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - MarketLens</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    :root { --bg:#0a0f18; --card:#131f31; --surface:#101826; --border:#22344e; --accent:#18c8ff; --text:#dce8f5; --muted:#8da3bb; --green:#20d98b; --red:#ff5d73; --yellow:#ffcc4d; }
+    * { box-sizing:border-box; margin:0; padding:0; } body { font-family:Inter,sans-serif; background:var(--bg); color:var(--text); }
+    .container { width:min(100% - 2.5rem,1180px); margin:0 auto; }
+    .navbar { position:sticky; top:0; z-index:20; background:rgba(10,15,24,.9); border-bottom:1px solid var(--border); backdrop-filter:blur(10px); }
+    .nav { min-height:72px; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+    .logo { color:#f4f8fc; text-decoration:none; font-weight:800; font-size:1.2rem; } .logo span{color:var(--accent);}
+    .links { display:flex; gap:1rem; align-items:center; flex-wrap:wrap; } .links a { text-decoration:none; color:var(--muted); font-family:"Space Mono",monospace; text-transform:uppercase; font-size:.72rem; } .links a:hover{color:#f4f8fc;}
+    .links .cta { background:var(--accent); color:#062231; padding:.6rem .95rem; border-radius:9px; font-weight:700; font-family:Inter,sans-serif; font-size:.75rem; }
+    .top { padding:1.4rem 0; display:flex; justify-content:space-between; align-items:flex-end; gap:1rem; flex-wrap:wrap; }
+    h1 { font-size:1.7rem; } .muted { color:var(--muted); }
+    .layout { display:grid; grid-template-columns:340px 1fr; gap:1rem; padding-bottom:1.8rem; }
+    .panel { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1rem; }
+    .panel h3 { font-size:.95rem; margin-bottom:.7rem; }
+    .watch-item { border:1px solid var(--border); border-radius:9px; background:#0f1727; padding:.65rem; margin-bottom:.55rem; }
+    .watch-head { display:flex; justify-content:space-between; gap:.5rem; align-items:center; } .watch-head strong{font-family:"Space Mono",monospace;font-size:.85rem;}
+    .sig { font-family:"Space Mono",monospace; font-size:.66rem; border-radius:999px; padding:.14rem .48rem; }
+    .BUY{color:var(--green);background:rgba(32,217,139,.12);border:1px solid rgba(32,217,139,.45);} .SELL{color:var(--red);background:rgba(255,93,115,.12);border:1px solid rgba(255,93,115,.45);} .HOLD{color:var(--yellow);background:rgba(255,204,77,.12);border:1px solid rgba(255,204,77,.45);}
+    .watch-actions { display:flex; gap:.45rem; margin-top:.55rem; }
+    button { border:none; border-radius:8px; padding:.5rem .58rem; cursor:pointer; font-size:.73rem; font-weight:700; }
+    .btn { background:var(--accent); color:#062231; } .btn-muted { background:#0f1727; border:1px solid var(--border); color:var(--text); }
+    #status { color:var(--muted); font-size:.88rem; margin-bottom:.7rem; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:.55rem; margin-bottom:.75rem; }
+    .stat { background:#0f1727; border:1px solid var(--border); border-radius:8px; padding:.6rem; } .stat small{color:var(--muted);font-size:.62rem;font-family:"Space Mono",monospace;text-transform:uppercase;} .stat strong{display:block;margin-top:.2rem;}
+    .chart-card { background:#0f1727; border:1px solid var(--border); border-radius:10px; padding:.6rem; margin-top:.65rem; } .chart-card h4 { color:var(--muted); font-family:"Space Mono",monospace; text-transform:uppercase; font-size:.64rem; margin-bottom:.45rem; }
+    .remove { background:rgba(255,93,115,.16); color:#ffdce2; border:1px solid rgba(255,93,115,.45); }
+    .empty { color:var(--muted); font-size:.9rem; }
+    @media (max-width:940px){ .layout{grid-template-columns:1fr;} }
+    @media (max-width:700px){ .container{width:min(100% - 1.35rem,1180px);} }
+  </style>
+  <link rel="stylesheet" href="/static/css/chatbot.css" />
+</head>
+<body>
+  <nav class="navbar"><div class="container nav"><a class="logo" href="/home">Market<span>Lens</span></a><div class="links"><a href="/home">Home</a><a href="/market">Market Data</a><a href="/dashboard" class="cta">Dashboard</a><a href="/logout">Logout</a></div></div></nav>
+  <div class="container">
+    <div class="top"><div><h1>{{ user["username"] }}'s Dashboard</h1><p class="muted">Track your watchlist and inspect live stock analysis.</p></div></div>
+    <div class="layout">
+      <aside class="panel">
+        <h3>Your Watchlist</h3>
+        <div id="watchlistContainer"></div>
+      </aside>
+      <section class="panel">
+        <div id="status">Select a watchlist stock to view full analysis.</div>
+        <div class="stats">
+          <div class="stat"><small>Ticker</small><strong id="sTicker">-</strong></div>
+          <div class="stat"><small>Latest Price</small><strong id="sPrice">-</strong></div>
+          <div class="stat"><small>Signal</small><strong id="sSignal">-</strong></div>
+          <div class="stat"><small>MA20 / MA50</small><strong id="sMa">-</strong></div>
+          <div class="stat"><small>RSI</small><strong id="sRsi">-</strong></div>
+          <div class="stat"><small>Volatility</small><strong id="sVol">-</strong></div>
+        </div>
+        <div class="chart-card"><h4>Price + Moving Averages</h4><canvas id="priceChart" height="95"></canvas></div>
+        <div class="chart-card"><h4>RSI</h4><canvas id="rsiChart" height="68"></canvas></div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    let priceChart = null;
+    let rsiChart = null;
+    let lastWatchlist = [];
+
+    function chartOptions() {
+      return {
+        responsive: true,
+        plugins: { legend: { labels: { color: "#8da3bb", font: { family: "Space Mono", size: 10 } } } },
+        scales: {
+          x: { ticks: { color: "#8da3bb", maxTicksLimit: 8, font: { family: "Space Mono", size: 9 } }, grid: { color: "rgba(34,52,78,.5)" } },
+          y: { ticks: { color: "#8da3bb", font: { family: "Space Mono", size: 9 } }, grid: { color: "rgba(34,52,78,.5)" } },
+        },
+      };
+    }
+
+    function signalClass(signal) {
+      return signal === "BUY" || signal === "SELL" || signal === "HOLD" ? signal : "";
+    }
+
+    async function loadWatchlist() {
+      const res = await fetch("/api/watchlist/stocks");
+      const data = await res.json();
+      const box = document.getElementById("watchlistContainer");
+
+      if (!data.success || !data.stocks.length) {
+        box.innerHTML = '<div class="empty">No watchlist stocks yet. Add them from Market Data.</div>';
+        return;
+      }
+
+      lastWatchlist = data.stocks;
+      box.innerHTML = data.stocks.map((s) => {
+        const price = s.price === null ? "N/A" : "$" + s.price;
+        return `<div class="watch-item">
+          <div class="watch-head"><strong>${s.ticker}</strong><span class="sig ${signalClass(s.signal)}">${s.signal}</span></div>
+          <div class="muted" style="font-size:.78rem;margin-top:.3rem;">${price} · Vol ${s.volatility ?? "N/A"}%</div>
+          <div class="watch-actions"><button class="btn" onclick="analyze('${s.ticker}')">Analyze</button><button class="remove" onclick="removeTicker('${s.ticker}')">Remove</button></div>
+        </div>`;
+      }).join("");
+    }
+
+    async function removeTicker(ticker) {
+      await fetch("/api/watchlist", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ticker }),
+      });
+      loadWatchlist();
+    }
+
+    async function analyze(ticker) {
+      const status = document.getElementById("status");
+      status.textContent = `Loading analysis for ${ticker}...`;
+      const res = await fetch(`/api/stock?ticker=${encodeURIComponent(ticker)}&period=6mo`);
+      const data = await res.json();
+
+      if (!data.success) {
+        status.textContent = data.error || "Failed to load analysis.";
+        return;
+      }
+
+      document.getElementById("sTicker").textContent = data.ticker;
+      document.getElementById("sPrice").textContent = "$" + data.signal.close;
+      document.getElementById("sSignal").textContent = data.signal.signal;
+      document.getElementById("sMa").textContent = "$" + data.signal.ma20 + " / $" + data.signal.ma50;
+      document.getElementById("sRsi").textContent = data.signal.rsi;
+      document.getElementById("sVol").textContent = data.stats.volatility + "%";
+      status.textContent = data.signal.reason;
+
+      if (priceChart) priceChart.destroy();
+      if (rsiChart) rsiChart.destroy();
+
+      priceChart = new Chart(document.getElementById("priceChart"), {
+        type: "line",
+        data: {
+          labels: data.chart.dates,
+          datasets: [
+            { label: "Close", data: data.chart.close, borderColor: "#18c8ff", pointRadius: 0, tension: .3, borderWidth: 2 },
+            { label: "MA20", data: data.chart.ma20, borderColor: "#ffcc4d", pointRadius: 0, tension: .3, borderWidth: 1.5, borderDash: [4, 3] },
+            { label: "MA50", data: data.chart.ma50, borderColor: "#ff8751", pointRadius: 0, tension: .3, borderWidth: 1.5, borderDash: [4, 3] },
+          ],
+        },
+        options: chartOptions(),
+      });
+
+      rsiChart = new Chart(document.getElementById("rsiChart"), {
+        type: "line",
+        data: { labels: data.chart.dates, datasets: [{ label: "RSI", data: data.chart.rsi, borderColor: "#be7dff", pointRadius: 0, tension: .3, borderWidth: 1.8 }] },
+        options: { ...chartOptions(), scales: { ...chartOptions().scales, y: { ...chartOptions().scales.y, min: 0, max: 100 } } },
+      });
+    }
+
+    async function refreshData() {
+      await loadWatchlist();
+      if (lastWatchlist.length) analyze(lastWatchlist[0].ticker);
+    }
+
+    refreshData();
+    setInterval(loadWatchlist, 60000);
+  </script>
+  <script src="/static/js/chatbot.js" data-page="dashboard" data-enabled="true"></script>
+</body>
+</html>
