@@ -1,5 +1,13 @@
 # 📈 MarketLens — Multi-Market Stock Analysis Dashboard
 
+
+<img width="1886" height="873" alt="image" src="https://github.com/user-attachments/assets/1f6c544f-b7ef-4646-9c34-018bd0df2ddc" />
+<img width="1894" height="876" alt="image" src="https://github.com/user-attachments/assets/da1a31f2-877c-4012-a8a5-4c6db436bffa" />
+<img width="1888" height="850" alt="image" src="https://github.com/user-attachments/assets/8a536048-faf0-46e7-b7d3-25ce3ff6f59f" />
+<img width="1344" height="824" alt="image" src="https://github.com/user-attachments/assets/7496e5e2-dfa5-482f-b367-f3ed714b05c5" />
+
+
+
 A web-based stock market dashboard built with **Python Flask + yfinance** for the backend
 and **HTML/CSS/JS + Chart.js** for the frontend.
 
@@ -88,5 +96,4 @@ These follow Yahoo Finance's `.KA` suffix for Karachi Stock Exchange.
 
 ---
 
-## ⚠️ Disclaimer
-This project is for **educational purposes only**. It is not financial advice.
+This project is not financial advice.
