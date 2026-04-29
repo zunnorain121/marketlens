@@ -96,4 +96,4 @@ These follow Yahoo Finance's `.KA` suffix for Karachi Stock Exchange.
 
 ---
 
-This project is not financial advice.
+This project is not for any financial advice.
